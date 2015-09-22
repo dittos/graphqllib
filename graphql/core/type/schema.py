@@ -25,9 +25,20 @@ class GraphQLSchema(object):
         )
     """
     def __init__(self, query, mutation=None):
+        assert isinstance(query, GraphQLObjectType), \
+            'Schema query must be Object Type but got: {}.'.format(query)
+        if mutation:
+            assert isinstance(mutation, GraphQLObjectType), \
+                'Schema mutation must be Object Type but got: {}.'.format(mutation)
         self.query = query
         self.mutation = mutation
-        self._type_map = None
+
+        self._type_map = reduce(type_map_reducer, [
+            self.get_query_type(),
+            self.get_mutation_type(),
+            IntrospectionSchema,
+        ], {})
+
         self._directives = None
 
     def get_query_type(self):
@@ -37,8 +48,6 @@ class GraphQLSchema(object):
         return self.mutation
 
     def get_type_map(self):
-        if self._type_map is None:
-            self._type_map = self._build_type_map()
         return self._type_map
 
     def get_type(self, name):
@@ -57,14 +66,6 @@ class GraphQLSchema(object):
             if directive.name == name:
                 return directive
         return None
-
-    def _build_type_map(self):
-        # TODO: make pythonic
-        return reduce(type_map_reducer, [
-            self.get_query_type(),
-            self.get_mutation_type(),
-            IntrospectionSchema,
-        ], {})
 
 
 def type_map_reducer(map, type):
@@ -97,8 +98,9 @@ def type_map_reducer(map, type):
     if isinstance(type, (GraphQLObjectType, GraphQLInterfaceType, GraphQLInputObjectType)):
         field_map = type.get_fields()
         for field_name, field in field_map.items():
-            if hasattr(field, 'args'):
-                field_arg_types = [arg.type for arg in field.args]
+            args = getattr(field, 'args', None)
+            if args:
+                field_arg_types = [arg.type for arg in args]
                 reduced_map = reduce(
                     type_map_reducer, field_arg_types, reduced_map
                 )

@@ -103,7 +103,7 @@ def sort_lists(value):
 
 
 def test_executes_an_introspection_query():
-    EmptySchema = GraphQLSchema(GraphQLObjectType('QueryRoot', {}))
+    EmptySchema = GraphQLSchema(GraphQLObjectType('QueryRoot', {'f': GraphQLField(GraphQLString)}))
 
     result = graphql(EmptySchema, introspection_query)
     assert not result.errors
@@ -132,7 +132,15 @@ def test_executes_an_introspection_query():
                                         'mutationType': None,
                                         'queryType': {'name': 'QueryRoot'},
                                         'types': [{'enumValues': None,
-                                                   'fields': [],
+                                                   'fields': [{
+                                                       'args': [],
+                                                       'deprecationReason': None,
+                                                       'isDeprecated': False,
+                                                       'name': 'f',
+                                                       'type': {'kind': 'SCALAR',
+                                                                'name': 'String',
+                                                                'ofType': None}
+                                                   }],
                                                    'inputFields': None,
                                                    'interfaces': [],
                                                    'kind': 'OBJECT',
@@ -649,9 +657,9 @@ def test_respects_the_includedeprecated_parameter_for_fields():
 
 def test_identifies_deprecated_enum_values():
     TestEnum = GraphQLEnumType('TestEnum', {
-        'NONDEPRECATED': 0,
+        'NONDEPRECATED': GraphQLEnumValue(0),
         'DEPRECATED': GraphQLEnumValue(1, deprecation_reason='Removed in 1.0'),
-        'ALSONONDEPRECATED': 2
+        'ALSONONDEPRECATED': GraphQLEnumValue(2),
     })
     TestType = GraphQLObjectType('TestType', {
         'testEnum': GraphQLField(TestEnum)
@@ -678,9 +686,9 @@ def test_identifies_deprecated_enum_values():
 
 def test_respects_the_includedeprecated_parameter_for_enum_values():
     TestEnum = GraphQLEnumType('TestEnum', {
-        'NONDEPRECATED': 0,
+        'NONDEPRECATED': GraphQLEnumValue(0),
         'DEPRECATED': GraphQLEnumValue(1, deprecation_reason='Removed in 1.0'),
-        'ALSONONDEPRECATED': 2
+        'ALSONONDEPRECATED': GraphQLEnumValue(2),
     })
     TestType = GraphQLObjectType('TestType', {
         'testEnum': GraphQLField(TestEnum)
@@ -723,7 +731,7 @@ def test_fails_as_expected_on_the_type_root_field_without_an_arg():
 
 
 def test_exposes_descriptions_on_types_and_fields():
-    QueryRoot = GraphQLObjectType('QueryRoot', {})
+    QueryRoot = GraphQLObjectType('QueryRoot', {'f': GraphQLField(GraphQLString)})
     schema = GraphQLSchema(QueryRoot)
     request = '''{
       schemaType: __type(name: "__Schema") {
@@ -767,7 +775,7 @@ def test_exposes_descriptions_on_types_and_fields():
 
 
 def test_exposes_descriptions_on_enums():
-    QueryRoot = GraphQLObjectType('QueryRoot', {})
+    QueryRoot = GraphQLObjectType('QueryRoot', {'f': GraphQLField(GraphQLString)})
     schema = GraphQLSchema(QueryRoot)
     request = '''{
       typeKindType: __type(name: "__TypeKind") {
